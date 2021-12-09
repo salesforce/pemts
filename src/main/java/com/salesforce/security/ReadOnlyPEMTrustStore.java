@@ -1,18 +1,11 @@
 package com.salesforce.security;
 
 import javax.management.*;
-import javax.naming.InvalidNameException;
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.management.ManagementFactory;
-import java.security.Key;
-import java.security.KeyStoreException;
-import java.security.KeyStoreSpi;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
@@ -24,12 +17,15 @@ import java.util.*;
  * 
  * @author ppeddada
  */
-public class ReadOnlyPEMTrustStore extends KeyStoreSpi {
+public class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTrustStoreMBean {
 
     public static final String NAME = "ROTKS";
+    public static final String DOMAIN_NAME = System.getProperty("rotks.jmx.domain", "sfdc.security");
 
     private Map<String, Certificate> entries;
+    private String digest;
     private final Date creationTime = new Date();
+    private  final ObjectName objectName = createObjectName();
 
     @Override
     public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException {
@@ -130,7 +126,8 @@ public class ReadOnlyPEMTrustStore extends KeyStoreSpi {
         if (stream == null) return;
         Map<String, Certificate> map = new HashMap<>();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
-        Collection<? extends Certificate> certificates = factory.generateCertificates(stream);
+        SHA3512HashingInputStream in = new SHA3512HashingInputStream(stream);
+        Collection<? extends Certificate> certificates = factory.generateCertificates(in);
         for (Certificate certificate : certificates) {
             if (map.put(createAlias(certificate), certificate) != null) {
                 throw new IllegalStateException("Duplicate entry " + certificate);
@@ -139,6 +136,19 @@ public class ReadOnlyPEMTrustStore extends KeyStoreSpi {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         certificates.forEach(e -> registerMBean(server, (X509Certificate) e));
         this.entries = Collections.unmodifiableMap(map);
+        this.digest = in.digest();
+        try {
+            server.registerMBean(this, objectName);
+        } catch (InstanceAlreadyExistsException ignored) {
+            
+        } catch (MBeanRegistrationException | NotCompliantMBeanException unlikelyException) {
+            throw new IllegalStateException(unlikelyException);
+        }
+    }
+
+    @Override
+    public String getDigest() {
+        return this.digest;
     }
 
     private static String createAlias(Certificate certificate) {
@@ -148,12 +158,78 @@ public class ReadOnlyPEMTrustStore extends KeyStoreSpi {
 
     private void registerMBean(MBeanServer server, X509Certificate cert) {
         try {
-            ObjectName name = new ObjectName("sfdc.security:Type=RootCertInfo,Name=" + cert.getSerialNumber().toString());
+            ObjectName name = new ObjectName(DOMAIN_NAME + ":Type=RootCertInfo,Name=" + cert.getSerialNumber().toString());
             server.registerMBean(new RootCertInfo(cert), name);
         } catch (InstanceAlreadyExistsException ignored) {
             //update the the existing value?
         } catch (MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException unlikelyException) {
             throw new IllegalStateException(unlikelyException);
+        }
+    }
+
+     /* package */ static ObjectName createObjectName() {
+        String name = "localhost";
+        try {
+            name = System.getProperty("jvm.identity", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException uhe) {
+        }
+        try {
+            return new ObjectName(DOMAIN_NAME + ":Type=ReadOnlyPEMTrustStore,Name=" + name + ",PID=" + ProcessHandle.current().pid());
+        } catch (MalformedObjectNameException unlikelyException) {
+            throw new IllegalStateException(unlikelyException);
+        }
+    }
+    private static final class SHA3512HashingInputStream extends FilterInputStream {
+
+        private final MessageDigest messageDigest = createMessageDigest();
+
+        protected SHA3512HashingInputStream(InputStream in) {
+            super(in);
+        }
+
+        @Override
+        public int read() throws IOException {
+            int b = in.read();
+            if (b != -1) {
+                messageDigest.update((byte)b);
+            }
+            return b;
+        }
+
+        @Override
+        public int read(byte[] bytes, int off, int len) throws IOException {
+            int numOfBytesRead = in.read(bytes, off, len);
+            if (numOfBytesRead != -1) {
+                messageDigest.update(bytes, off, numOfBytesRead);
+            }
+            return numOfBytesRead;
+        }
+
+        @Override
+        public boolean markSupported() {
+            return false;
+        }
+
+        @Override
+        public void reset() {
+            throw new IllegalStateException("Unsupported operation");
+        }
+
+        @Override
+        public void mark(int limit) {
+            throw new IllegalStateException("Unsupported operation");
+        }
+
+        String digest() {
+            return RootCertInfo.toHex(messageDigest.digest());
+        }
+
+        private MessageDigest createMessageDigest() {
+            try {
+                return MessageDigest.getInstance("SHA3-512");
+            } catch (NoSuchAlgorithmException unlikelyException) {
+                throw new IllegalStateException(unlikelyException);
+            }
         }
     }
 }

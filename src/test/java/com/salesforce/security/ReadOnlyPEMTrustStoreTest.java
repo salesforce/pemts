@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -27,13 +28,11 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
-import java.util.Base64;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Enumeration;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import javax.management.*;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
@@ -117,6 +116,31 @@ public class ReadOnlyPEMTrustStoreTest {
         Assert.assertNull(store.getCertificateChain("bogus"));
         Assert.assertFalse(store.isCertificateEntry("alias"));
         Assert.assertFalse(store.isKeyEntry("alias"));
+    }
+
+    @Test
+    public void testReadOnlyPEMTrustStoreMBean() throws Exception {
+        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
+        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+        store.load(in, null);
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        Assert.assertNotNull(server.getAttribute(ReadOnlyPEMTrustStore.createObjectName(), "Digest"));
+    }
+
+    @Test
+    public void testRootCertInfo() throws Exception {
+        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
+        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+        store.load(in, null);
+        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+        ObjectName name = new ObjectName("sfdc.security:Type=RootCertInfo,Name=*");
+        Set<ObjectName> set = server.queryNames(name, null);
+        for (ObjectName on : set) {
+            MBeanInfo info = server.getMBeanInfo(on);
+            for (MBeanAttributeInfo mBeanAttributeInfo : info.getAttributes()) {
+                Assert.assertNotNull(server.getAttribute(on, mBeanAttributeInfo.getName()));
+            }
+        }
     }
 
     @Test(expected = IOException.class)

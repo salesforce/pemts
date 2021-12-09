@@ -5,13 +5,20 @@ package com.salesforce.security;
  */
 public interface RootCertInfoMBean {
 
-    String getIssuerPrincipalName();
+
+    String getSubjectPrincipalName();
 
     String getSerialNumber();
 
     String getSigAlgName();
 
     String getSignature();
+
+    String getNotBefore();
+
+    String getNotAfter();
+
+    String getThumbprint();
 
 
 }
