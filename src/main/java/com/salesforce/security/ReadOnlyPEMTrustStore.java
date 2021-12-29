@@ -17,7 +17,7 @@ import java.util.*;
  * 
  * @author ppeddada
  */
-public class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTrustStoreMBean {
+public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTrustStoreMBean {
 
     public static final String NAME = "ROTKS";
     public static final String DOMAIN_NAME = System.getProperty("rotks.jmx.domain", "sfdc.security");
@@ -25,7 +25,7 @@ public class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTru
     private Map<String, Certificate> entries;
     private String digest;
     private final Date creationTime = new Date();
-    private  final ObjectName objectName = createObjectName();
+    private final ObjectName objectName = createObjectName();
 
     @Override
     public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException {
@@ -179,6 +179,7 @@ public class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTru
             throw new IllegalStateException(unlikelyException);
         }
     }
+
     private static final class SHA3512HashingInputStream extends FilterInputStream {
 
         private final MessageDigest messageDigest = createMessageDigest();

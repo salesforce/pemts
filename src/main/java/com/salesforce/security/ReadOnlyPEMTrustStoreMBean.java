@@ -1,7 +1,7 @@
 package com.salesforce.security;
 
 /**
- *
+ * Expose digest of the file loaded from the file system as a StandardMBean
  * @author ppeddada
  */
 public interface ReadOnlyPEMTrustStoreMBean {

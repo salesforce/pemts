@@ -5,6 +5,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
+/**
+ * @author ppeddada
+ */
 public final class RootCertInfo implements RootCertInfoMBean {
 
     private final String subjectPrincipal;
