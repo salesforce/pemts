@@ -1,11 +1,31 @@
 package com.salesforce.security;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.*;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.bc.BcX509ExtensionUtils;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.*;
+import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.junit.Assert;
+import org.junit.Test;
+
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanServer;
+import javax.management.ObjectName;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.math.BigInteger;
 import java.net.HttpURLConnection;
@@ -14,16 +34,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.PrivateKey;
-import java.security.Provider;
-import java.security.PublicKey;
-import java.security.SecureRandom;
-import java.security.Security;
-import java.security.UnrecoverableEntryException;
+import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
@@ -31,43 +42,6 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import javax.management.*;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.SecureRequestCustomizer;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.junit.Assert;
-import org.junit.Test;
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.GeneralName;
-import org.bouncycastle.asn1.x509.KeyPurposeId;
-import org.bouncycastle.asn1.x509.KeyUsage;
-import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.bc.BcX509ExtensionUtils;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 
 public class ReadOnlyPEMTrustStoreTest {
 
@@ -107,7 +81,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testPemFileLoading() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             Assert.assertNotNull(in);
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
@@ -121,7 +95,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testReadOnlyPEMTrustStoreMBean() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -131,7 +105,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testRootCertInfo() throws Exception {
-        try(InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+        try(InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -148,7 +122,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test(expected = IOException.class)
     public void testStore() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             Assert.assertNotNull(in);
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
@@ -158,7 +132,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testTrustStore() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             Assert.assertNotNull(in);
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
@@ -172,7 +146,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test(expected = IllegalStateException.class)
     public void testDuplicateEntriesPemFile() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/dup.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/dup.pem")) {
             Assert.assertNotNull(in);
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
@@ -195,7 +169,7 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testSinglePem() throws Exception {
-        try (InputStream in = new FileInputStream(new File("src/test/resources/single.pem"))) {
+        try (InputStream in = new FileInputStream("src/test/resources/single.pem")) {
             Assert.assertNotNull(in);
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
@@ -484,7 +458,7 @@ public class ReadOnlyPEMTrustStoreTest {
     private static class TestHandler extends AbstractHandler {
         @Override
         public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-                throws IOException, ServletException {
+                throws IOException {
             // Declare response encoding and types
             response.setContentType("text/plain; charset=utf-8");
             // Declare response status code
