@@ -107,70 +107,76 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testPemFileLoading() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
-        Assert.assertNotNull(in);
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        Assert.assertTrue(store.size() > 0);
-        Assert.assertNull(store.getCertificate("bogus"));
-        Assert.assertNull(store.getCertificateChain("bogus"));
-        Assert.assertFalse(store.isCertificateEntry("alias"));
-        Assert.assertFalse(store.isKeyEntry("alias"));
+        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+            Assert.assertNotNull(in);
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            Assert.assertTrue(store.size() > 0);
+            Assert.assertNull(store.getCertificate("bogus"));
+            Assert.assertNull(store.getCertificateChain("bogus"));
+            Assert.assertFalse(store.isCertificateEntry("alias"));
+            Assert.assertFalse(store.isKeyEntry("alias"));
+        }
     }
 
     @Test
     public void testReadOnlyPEMTrustStoreMBean() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        Assert.assertNotNull(server.getAttribute(ReadOnlyPEMTrustStore.createObjectName(), "Digest"));
+        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            Assert.assertNotNull(server.getAttribute(ReadOnlyPEMTrustStore.createObjectName(), "Digest"));
+        }
     }
 
     @Test
     public void testRootCertInfo() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-        ObjectName name = new ObjectName("sfdc.security:Type=RootCertInfo,Name=*");
-        Set<ObjectName> set = server.queryNames(name, null);
-        for (ObjectName on : set) {
-            MBeanInfo info = server.getMBeanInfo(on);
-            for (MBeanAttributeInfo mBeanAttributeInfo : info.getAttributes()) {
-                Assert.assertNotNull(server.getAttribute(on, mBeanAttributeInfo.getName()));
+        try(InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            ObjectName name = new ObjectName("sfdc.security:Type=RootCertInfo,Name=*");
+            Set<ObjectName> set = server.queryNames(name, null);
+            for (ObjectName on : set) {
+                MBeanInfo info = server.getMBeanInfo(on);
+                for (MBeanAttributeInfo mBeanAttributeInfo : info.getAttributes()) {
+                    Assert.assertNotNull(server.getAttribute(on, mBeanAttributeInfo.getName()));
+                }
             }
         }
     }
 
     @Test(expected = IOException.class)
     public void testStore() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
-        Assert.assertNotNull(in);
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        store.store(null, null);
+        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+            Assert.assertNotNull(in);
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            store.store(null, null);
+        }
     }
 
     @Test
     public void testTrustStore() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"));
-        Assert.assertNotNull(in);
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        TrustManagerFactory factory = TrustManagerFactory.getInstance("PKIX");
-        factory.init(store);
-        TrustManager[] mgrs = factory.getTrustManagers();
-        Assert.assertNotNull(mgrs);
-        Assert.assertTrue(mgrs.length > 0);
+        try (InputStream in = new FileInputStream(new File("src/test/resources/certs.pem"))) {
+            Assert.assertNotNull(in);
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            TrustManagerFactory factory = TrustManagerFactory.getInstance("PKIX");
+            factory.init(store);
+            TrustManager[] mgrs = factory.getTrustManagers();
+            Assert.assertNotNull(mgrs);
+            Assert.assertTrue(mgrs.length > 0);
+        }
     }
 
     @Test(expected = IllegalStateException.class)
     public void testDuplicateEntriesPemFile() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/dup.pem"));
-        Assert.assertNotNull(in);
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
+        try (InputStream in = new FileInputStream(new File("src/test/resources/dup.pem"))) {
+            Assert.assertNotNull(in);
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+        }
     }
 
     @Test(expected = UnrecoverableEntryException.class)
@@ -189,22 +195,23 @@ public class ReadOnlyPEMTrustStoreTest {
 
     @Test
     public void testSinglePem() throws Exception {
-        InputStream in = new FileInputStream(new File("src/test/resources/single.pem"));
-        Assert.assertNotNull(in);
-        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-        store.load(in, null);
-        Enumeration<String> aliases = store.aliases();
-        while (aliases.hasMoreElements()) {
-            String alias = aliases.nextElement();
-            Assert.assertTrue(store.containsAlias(alias));
-            Assert.assertNotNull(store.getCertificate(alias));
-            Assert.assertNotNull(store.getCertificateChain(alias));
-            Assert.assertNotNull(store.getCreationDate(alias));
-            Assert.assertTrue(store.isCertificateEntry(alias));
-            Assert.assertFalse(store.isKeyEntry(alias));
+        try (InputStream in = new FileInputStream(new File("src/test/resources/single.pem"))) {
+            Assert.assertNotNull(in);
+            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+            store.load(in, null);
+            Enumeration<String> aliases = store.aliases();
+            while (aliases.hasMoreElements()) {
+                String alias = aliases.nextElement();
+                Assert.assertTrue(store.containsAlias(alias));
+                Assert.assertNotNull(store.getCertificate(alias));
+                Assert.assertNotNull(store.getCertificateChain(alias));
+                Assert.assertNotNull(store.getCreationDate(alias));
+                Assert.assertTrue(store.isCertificateEntry(alias));
+                Assert.assertFalse(store.isKeyEntry(alias));
+            }
+            Assert.assertFalse(store.isCertificateEntry("nonexistent"));
+            Assert.assertNull(store.getCreationDate("nonexistent"));
         }
-        Assert.assertFalse(store.isCertificateEntry("nonexistent"));
-        Assert.assertNull(store.getCreationDate("nonexistent"));
     }
 
     @Test(expected = KeyStoreException.class)
