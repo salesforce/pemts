@@ -186,7 +186,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
             for (Rdn rdn : name.getRdns()) {
                 String type = rdn.getType();
                 if (type != null && Objects.equals(type.toUpperCase(), "CN")) {
-                    return rdn.getValue().toString();
+                    return rdn.getValue().toString() + " " + cert.getSerialNumber();
                 }
             }
         } catch (InvalidNameException ignored) {
