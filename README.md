@@ -5,8 +5,8 @@
 A Java trust store is an instance of KeyStore which only contains certificates. There are various 
 types of [KeyStore](https://docs.oracle.com/en/java/javase/11/docs/specs/security/standard-names.html#keystore-types) 
 implementations. For example JCEKS, JKS, PKCS11 implementations are bundled with JDK. Unfortunately 
-neither one is FIPS compliant and you have to use a thirdparty implementation such as BCFKS to be 
-FIPS compliant. You might end up having to configure your JVM with different format files for each environments.
+none of these implementations are FIPS compliant and you have to use a thirdparty implementation such as BCFKS to be 
+FIPS compliant. You might end up having to configure your JVM with different format files for each environment.
 
 ## Solution
 
