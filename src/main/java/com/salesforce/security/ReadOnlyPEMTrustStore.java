@@ -124,12 +124,17 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
             throws IOException, CertificateException {
         if (password != null) { throw new IOException("Password shouldn't be set for trust store"); }
         if (stream == null) return;
+        Date now = new Date();
         Map<String, Certificate> map = new HashMap<>();
         CertificateFactory factory = CertificateFactory.getInstance("X.509");
         SHA3512HashingInputStream in = new SHA3512HashingInputStream(stream);
         Collection<? extends Certificate> certificates = factory.generateCertificates(in);
         for (Certificate certificate : certificates) {
-            if (map.put(identifier((X509Certificate) certificate), certificate) != null) {
+            X509Certificate x509Certificate = (X509Certificate) certificate;
+            if (x509Certificate.getNotAfter().before(now)) {
+                continue;
+            }
+            if (map.put(identifier(x509Certificate), x509Certificate) != null) {
                 throw new IllegalStateException("Duplicate entry " + certificate);
             }
         }
