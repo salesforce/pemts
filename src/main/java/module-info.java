@@ -3,6 +3,7 @@ module com.salesforce.security.tks {
    exports com.salesforce.security;
    requires java.management;
    requires java.naming;
+   //Only used for testing.
    requires java.net.http;
 
 }

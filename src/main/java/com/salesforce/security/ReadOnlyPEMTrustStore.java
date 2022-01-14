@@ -1,6 +1,9 @@
 package com.salesforce.security;
 
 import javax.management.*;
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import java.io.*;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -28,7 +31,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
     private final ObjectName objectName = createObjectName();
 
     @Override
-    public Key engineGetKey(String alias, char[] password) throws NoSuchAlgorithmException, UnrecoverableKeyException {
+    public Key engineGetKey(String alias, char[] password) throws UnrecoverableKeyException {
         throw new UnrecoverableKeyException("This is a trust store with no keys");
     }
 
@@ -74,11 +77,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
     @Override
     public Enumeration<String> engineAliases() {
         if (entries != null) {
-            Vector<String> aliases = new Vector<>();
-            for (String key : entries.keySet()) {
-                aliases.add(key);
-            }
-            return aliases.elements();
+            return new Vector<>(entries.keySet()).elements();
         }
         return null;
     }
@@ -102,19 +101,20 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
 
     @Override
     public boolean engineIsCertificateEntry(String alias) {
-        if (entries != null && entries.containsKey(alias)) { return true; }
-        return false;
+        if (entries == null) {
+            return false;
+        }
+        return entries.containsKey(alias);
     }
 
     @Override
     public String engineGetCertificateAlias(Certificate cert) {
-        if (cert != null) { return createAlias(cert); }
+        if (cert != null) { return identifier((X509Certificate) cert); }
         return null;
     }
 
     @Override
-    public void engineStore(OutputStream stream, char[] password)
-            throws IOException, NoSuchAlgorithmException, CertificateException {
+    public void engineStore(OutputStream stream, char[] password) throws IOException {
         throw new IOException("This store cannot be persisted");
 
     }
@@ -129,7 +129,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
         SHA3512HashingInputStream in = new SHA3512HashingInputStream(stream);
         Collection<? extends Certificate> certificates = factory.generateCertificates(in);
         for (Certificate certificate : certificates) {
-            if (map.put(createAlias(certificate), certificate) != null) {
+            if (map.put(identifier((X509Certificate) certificate), certificate) != null) {
                 throw new IllegalStateException("Duplicate entry " + certificate);
             }
         }
@@ -151,18 +151,13 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
         return this.digest;
     }
 
-    private static String createAlias(Certificate certificate) {
-        X509Certificate x509 = (X509Certificate)certificate;
-        return x509.getSubjectX500Principal().getName();
-    }
-
     private void registerMBean(MBeanServer server, X509Certificate cert) {
         try {
-            ObjectName name = new ObjectName(DOMAIN_NAME + ":Type=RootCertInfo,Name=" + cert.getSerialNumber().toString());
+            ObjectName name = new ObjectName(DOMAIN_NAME + ":Type=RootCertInfo,Name=" + identifier(cert));
             server.registerMBean(new RootCertInfo(cert), name);
         } catch (InstanceAlreadyExistsException ignored) {
-            //update the the existing value?
         } catch (MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException unlikelyException) {
+            //If the bean already exists ignore
             throw new IllegalStateException(unlikelyException);
         }
     }
@@ -171,7 +166,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
         String name = "localhost";
         try {
             name = System.getProperty("jvm.identity", InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException uhe) {
+        } catch (UnknownHostException ignored) {
         }
         try {
             return new ObjectName(DOMAIN_NAME + ":Type=ReadOnlyPEMTrustStore,Name=" + name + ",PID=" + ProcessHandle.current().pid());
@@ -180,11 +175,25 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
         }
     }
 
+    private static String identifier(X509Certificate cert) {
+        try {
+            LdapName name = new LdapName(cert.getSubjectX500Principal().getName());
+            for (Rdn rdn : name.getRdns()) {
+                String type = rdn.getType();
+                if (type != null && Objects.equals(type.toUpperCase(), "CN")) {
+                    return rdn.getValue().toString();
+                }
+            }
+        } catch (InvalidNameException ignored) {
+        }
+        return cert.getSerialNumber().toString();
+    }
+
     private static final class SHA3512HashingInputStream extends FilterInputStream {
 
         private final MessageDigest messageDigest = createMessageDigest();
 
-        protected SHA3512HashingInputStream(InputStream in) {
+        private SHA3512HashingInputStream(InputStream in) {
             super(in);
         }
 
