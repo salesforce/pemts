@@ -180,18 +180,29 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
         }
     }
 
-    private static String identifier(X509Certificate cert) {
+    static String identifier(X509Certificate cert) {
         try {
-            LdapName name = new LdapName(cert.getSubjectX500Principal().getName());
-            for (Rdn rdn : name.getRdns()) {
-                String type = rdn.getType();
-                if (type != null && Objects.equals(type.toUpperCase(), "CN")) {
-                    return rdn.getValue().toString() + " " + cert.getSerialNumber();
-                }
+            List<Rdn> rdns = new LdapName(cert.getSubjectX500Principal().getName()).getRdns();
+            String name = extractValue(rdns, "CN");
+            if (name == null) {
+                name = extractValue(rdns, "OU");
+            }
+            if (name != null) {
+                return (name + " " + cert.getSerialNumber()).replace(',', ' ');
             }
         } catch (InvalidNameException ignored) {
         }
         return cert.getSerialNumber().toString();
+    }
+
+    private static String extractValue(List<Rdn> rdns, String expectedType) {
+        for (Rdn rdn : rdns) {
+            String type = rdn.getType();
+            if (type != null && Objects.equals(type.toUpperCase(), expectedType)) {
+                return rdn.getValue().toString();
+            }
+        }
+        return null;
     }
 
     private static final class SHA3512HashingInputStream extends FilterInputStream {
