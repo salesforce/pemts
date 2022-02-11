@@ -109,8 +109,9 @@ public class ReadOnlyPEMTrustStoreTest {
             KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
             store.load(in, null);
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
-            ObjectName name = new ObjectName("sfdc.security:Type=RootCertInfo,Name=*");
+            ObjectName name = new ObjectName(ReadOnlyPEMTrustStore.OBJECT_NAME_PREFIX+ "*");
             Set<ObjectName> set = server.queryNames(name, null);
+            Assert.assertTrue("Expected size to be greater than zero", set.size() > 0);
             for (ObjectName on : set) {
                 MBeanInfo info = server.getMBeanInfo(on);
                 for (MBeanAttributeInfo mBeanAttributeInfo : info.getAttributes()) {

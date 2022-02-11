@@ -6,8 +6,6 @@ import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
 import java.io.*;
 import java.lang.management.ManagementFactory;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
@@ -23,7 +21,7 @@ import java.util.*;
 public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnlyPEMTrustStoreMBean {
 
     public static final String NAME = "ROTKS";
-    public static final String DOMAIN_NAME = System.getProperty("rotks.jmx.domain", "sfdc.security");
+    public static final String OBJECT_NAME_PREFIX = System.getProperty("rotks.jmx.prefix", "SFDC:type=Logging,name1=InfraSec,name2=");
 
     private Map<String, Certificate> entries;
     private String digest;
@@ -158,7 +156,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
 
     private void registerMBean(MBeanServer server, X509Certificate cert) {
         try {
-            ObjectName name = new ObjectName(DOMAIN_NAME + ":Type=RootCertInfo,Name=" + identifier(cert));
+            ObjectName name = new ObjectName(OBJECT_NAME_PREFIX + identifier(cert));
             server.registerMBean(new RootCertInfo(cert), name);
         } catch (InstanceAlreadyExistsException ignored) {
         } catch (MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException unlikelyException) {
@@ -168,13 +166,8 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
     }
 
      /* package */ static ObjectName createObjectName() {
-        String name = "localhost";
         try {
-            name = System.getProperty("jvm.identity", InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException ignored) {
-        }
-        try {
-            return new ObjectName(DOMAIN_NAME + ":Type=ReadOnlyPEMTrustStore,Name=" + name + ",PID=" + ProcessHandle.current().pid());
+            return new ObjectName(OBJECT_NAME_PREFIX + "SystemRoot");
         } catch (MalformedObjectNameException unlikelyException) {
             throw new IllegalStateException(unlikelyException);
         }
