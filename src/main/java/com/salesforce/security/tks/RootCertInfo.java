@@ -1,4 +1,4 @@
-package com.salesforce.security;
+package com.salesforce.security.tks;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

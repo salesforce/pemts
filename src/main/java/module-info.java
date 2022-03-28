@@ -1,6 +1,8 @@
+import com.salesforce.security.tks.TrustStoreProvider;
+
 module com.salesforce.security.tks {
-   provides java.security.Provider with com.salesforce.security.TrustStoreProvider;
-   exports com.salesforce.security;
+   provides java.security.Provider with TrustStoreProvider;
+   exports com.salesforce.security.tks;
    requires java.management;
    requires java.naming;
    //Only used for testing.

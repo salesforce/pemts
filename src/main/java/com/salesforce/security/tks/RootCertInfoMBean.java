@@ -1,4 +1,4 @@
-package com.salesforce.security;
+package com.salesforce.security.tks;
 
 /**
  * Expose each root certificate as a StandardMBean

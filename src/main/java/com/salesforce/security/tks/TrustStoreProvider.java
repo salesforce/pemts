@@ -1,4 +1,4 @@
-package com.salesforce.security;
+package com.salesforce.security.tks;
 
 import java.security.Provider;
 
@@ -12,7 +12,7 @@ public final class TrustStoreProvider extends Provider {
     public static final String NAME = "SalesforceTrustStoreProvider";
 
     public TrustStoreProvider() {
-        super(NAME, "1.0", "A PEM file backed trust store provider");
+        super(NAME, "1.1", "A PEM file backed trust store provider");
         put("KeyStore." + ReadOnlyPEMTrustStore.NAME, ReadOnlyPEMTrustStore.class.getName());
     }
 

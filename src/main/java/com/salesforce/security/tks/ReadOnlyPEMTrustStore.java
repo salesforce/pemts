@@ -1,4 +1,4 @@
-package com.salesforce.security;
+package com.salesforce.security.tks;
 
 import javax.management.*;
 import javax.naming.InvalidNameException;

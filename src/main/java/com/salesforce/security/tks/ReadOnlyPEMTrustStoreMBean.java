@@ -1,4 +1,4 @@
-package com.salesforce.security;
+package com.salesforce.security.tks;
 
 /**
  * Expose digest of the file loaded from the file system as a StandardMBean
