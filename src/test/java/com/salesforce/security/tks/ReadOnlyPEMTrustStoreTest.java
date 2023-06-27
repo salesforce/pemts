@@ -74,6 +74,13 @@ public class ReadOnlyPEMTrustStoreTest {
         Assert.assertNull(store.getCertificateAlias(null));
     }
 
+    @Test
+    public void testEmptyPassword() throws Exception {
+        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+        Assert.assertNotNull(store);
+        store.load(null, "".toCharArray());
+    }
+
     @Test(expected = IOException.class)
     public void testInvalidPassword() throws Exception {
         KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);

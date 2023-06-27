@@ -120,7 +120,7 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
     @Override
     public void engineLoad(InputStream stream, char[] password)
             throws IOException, CertificateException {
-        if (password != null) { throw new IOException("Password shouldn't be set for trust store"); }
+        if (password != null && password.length > 0) { throw new IOException("Password shouldn't be set for trust store"); }
         if (stream == null) return;
         Date now = new Date();
         Map<String, Certificate> map = new HashMap<>();
