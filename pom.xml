@@ -11,14 +11,14 @@
 	<maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <bcversion>1.69</bcversion>     
-        <jettyversion>9.4.44.v20210927</jettyversion>
+        <jettyversion>9.4.53.v20231009</jettyversion>
 	</properties>
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.0</version>
+                <version>3.11.0</version>
                 <configuration>
                     <source>${maven.compiler.source}</source>
                     <target>${maven.compiler.target}</target>
