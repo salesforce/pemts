@@ -175,23 +175,24 @@ public final class ReadOnlyPEMTrustStore extends KeyStoreSpi implements ReadOnly
     }
 
     static String identifier(X509Certificate cert) {
-        String hash = "";
+        StringBuilder builder = new StringBuilder();
         try {
             List<Rdn> rdns = new LdapName(cert.getSubjectX500Principal().getName()).getRdns();
             String name = extractValue(rdns, "CN");
             if (name == null) {
                 name = extractValue(rdns, "OU");
             }
-            MessageDigest digest = MessageDigest.getInstance("ShA-256");
-            hash = new BigInteger(digest.digest(cert.getPublicKey().getEncoded())).toString(16);
             if (name != null) {
-                return (name + " " + hash + '_' + cert.getSerialNumber()).replace(',', ' ');
+                builder.append(name);
+                builder.append('_');
             }
         } catch (InvalidNameException ignored) {
-        } catch (NoSuchAlgorithmException unlikelyException) {
-            throw new IllegalStateException(unlikelyException);
+            builder = new StringBuilder("INVALID_");
         }
-        return 'p' + hash + '_' + cert.getSerialNumber();
+        builder.append(new BigInteger(cert.getSignature()).toString(16));
+        builder.append('_');
+        builder.append(cert.getSerialNumber());
+        return builder.toString().replace(',', ' ');
     }
 
     private static String extractValue(List<Rdn> rdns, String expectedType) {

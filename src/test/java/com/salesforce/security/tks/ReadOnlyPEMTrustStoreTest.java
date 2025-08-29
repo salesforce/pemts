@@ -1,7 +1,5 @@
 package com.salesforce.security.tks;
 
-import com.salesforce.security.tks.ReadOnlyPEMTrustStore;
-import com.salesforce.security.tks.TrustStoreProvider;
 import org.bouncycastle.asn1.ASN1Encodable;
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DERSequence;
@@ -38,6 +36,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.security.spec.ECGenParameterSpec;
@@ -155,14 +154,18 @@ public class ReadOnlyPEMTrustStoreTest {
     public void testTrustStore() throws Exception {
         try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
             Assert.assertNotNull(in);
-            KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
-            store.load(in, null);
-            TrustManagerFactory factory = TrustManagerFactory.getInstance("PKIX");
-            factory.init(store);
-            TrustManager[] mgrs = factory.getTrustManagers();
-            Assert.assertNotNull(mgrs);
-            Assert.assertTrue(mgrs.length > 0);
+            validateTrustBundle(in);
         }
+    }
+
+    private static void validateTrustBundle(InputStream in) throws KeyStoreException, NoSuchProviderException, IOException, NoSuchAlgorithmException, CertificateException {
+        KeyStore store = KeyStore.getInstance(ReadOnlyPEMTrustStore.NAME, TrustStoreProvider.NAME);
+        store.load(in, null);
+        TrustManagerFactory factory = TrustManagerFactory.getInstance("PKIX");
+        factory.init(store);
+        TrustManager[] mgrs = factory.getTrustManagers();
+        Assert.assertNotNull(mgrs);
+        Assert.assertTrue(mgrs.length > 0);
     }
 
     @Test(expected = IllegalStateException.class)
