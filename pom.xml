@@ -10,7 +10,7 @@
         <junit.version>4.13.2</junit.version>
 	<maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <bcversion>1.70</bcversion>     
+        <bcversion>1.81</bcversion>     
         <jettyversion>9.4.53.v20231009</jettyversion>
 	</properties>
     <build>
@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcprov-jdk15on</artifactId>
+            <artifactId>bcprov-jdk18on</artifactId>
             <version>${bcversion}</version>
             <scope>test</scope>
         </dependency>  
@@ -63,7 +63,7 @@
         </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
-            <artifactId>bcpkix-jdk15on</artifactId>
+            <artifactId>bcpkix-jdk18on</artifactId>
             <version>${bcversion}</version>
             <scope>test</scope>
         </dependency>
