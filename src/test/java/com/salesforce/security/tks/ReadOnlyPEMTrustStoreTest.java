@@ -130,6 +130,17 @@ public class ReadOnlyPEMTrustStoreTest {
         }
     }
 
+    @Test
+    public void testIdentifier() throws Exception {
+        X509Certificate cert = null;
+        try(InputStream in = new FileInputStream("src/test/resources/single.pem")) {
+            CertificateFactory factory = CertificateFactory.getInstance("X.509");
+            cert = (X509Certificate) factory.generateCertificate(in);
+        }
+        Assert.assertNotNull(cert);
+        Assert.assertNotNull(ReadOnlyPEMTrustStore.identifier(cert));
+    }
+
     @Test(expected = IOException.class)
     public void testStore() throws Exception {
         try (InputStream in = new FileInputStream("src/test/resources/certs.pem")) {
