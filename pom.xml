@@ -10,7 +10,7 @@
         <junit.version>4.13.2</junit.version>
 	<maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <bcversion>1.69</bcversion>     
+        <bcversion>1.70</bcversion>     
         <jettyversion>9.4.53.v20231009</jettyversion>
 	</properties>
     <build>
