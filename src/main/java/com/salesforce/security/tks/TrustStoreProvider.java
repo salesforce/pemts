@@ -17,7 +17,7 @@ public final class TrustStoreProvider extends Provider {
     private final Set<Service> services;
 
     public TrustStoreProvider() {
-        super(NAME, "1.3", "A PEM file backed trust store provider");
+        super(NAME, "1.5", "A PEM file backed trust store provider");
         this.service = new Service(this, TYPE, ReadOnlyPEMTrustStore.NAME, ReadOnlyPEMTrustStore.class.getName(),
                 Collections.emptyList(), Collections.emptyMap());
         services = Set.of(service);
